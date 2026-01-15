@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Photobooth Veteran 7680</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+        }
+
+        .screen {
+            display: none;
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .screen.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .camera-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+        }
+
+        .camera-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            overflow: hidden;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        #video.mirror {
+            transform: scaleX(-1);
+        }
+
+        .preview-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        #preview {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            display: block;
+            background: #000;
+        }
+
+        .frame-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 1;
+            z-index: 10;
+            object-fit: contain;
+        }
+
+        canvas {
+            display: none;
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 30px 20px;
+            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 70%, transparent 100%);
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex: 1;
+            max-width: 180px;
+            min-width: 120px;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn-capture {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: white;
+            border: 4px solid rgba(255,255,255,0.3);
+            font-size: 1.8em;
+            padding: 0;
+            flex: none;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .btn-capture:active {
+            background: #f0f0f0;
+        }
+
+        .btn-switch {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            color: white;
+            font-size: 1.3em;
+            padding: 0;
+            flex: none;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .btn-switch:active {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(56, 239, 125, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .btn-badge {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 1.2em;
+            text-align: center;
+            z-index: 5;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Orientation indicator */
+        .orientation-badge {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            z-index: 25;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        /* Sticker on preview */
+        .sticker-overlay {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            cursor: grab;
+            z-index: 15;
+            touch-action: none;
+            user-select: none;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+            transition: transform 0.1s;
+        }
+
+        .sticker-overlay:active {
+            cursor: grabbing;
+            transform: scale(1.1);
+        }
+
+        .sticker-overlay img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+        }
+
+        .remove-sticker {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 24px;
+            height: 24px;
+            background: #ff4757;
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        /* Badge Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: #1a1a2e;
+            border-radius: 20px;
+            padding: 25px;
+            max-width: 350px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            color: white;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            width: 35px;
+            height: 35px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 1.2em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close:active {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .badge-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .badge-item {
+            aspect-ratio: 1;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid transparent;
+        }
+
+        .badge-item:active {
+            transform: scale(0.95);
+        }
+
+        .badge-item:hover {
+            background: rgba(255,255,255,0.2);
+            border-color: rgba(255,255,255,0.3);
+        }
+
+        .badge-item img {
+            width: 100%;
+            height: 70%;
+            object-fit: contain;
+        }
+
+        .badge-item span {
+            color: white;
+            font-size: 0.7em;
+            margin-top: 5px;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+        }
+
+        .skip-badge {
+            margin-top: 15px;
+            width: 100%;
+            padding: 12px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            color: white;
+            font-size: 0.95em;
+            cursor: pointer;
+        }
+
+        .skip-badge:active {
+            background: rgba(255,255,255,0.2);
+        }
+
+        @media (max-width: 480px) {
+            .controls {
+                padding: 20px 15px;
+            }
+            
+            .btn {
+                font-size: 0.85em;
+                padding: 12px 18px;
+                min-width: 100px;
+            }
+
+            .btn-capture {
+                width: 65px;
+                height: 65px;
+            }
+
+            .btn-switch {
+                width: 45px;
+                height: 45px;
+                font-size: 1.1em;
+            }
+
+            .modal {
+                padding: 20px;
+            }
+
+            .badge-grid {
+                gap: 10px;
+            }
+
+            .sticker-overlay {
+                width: 60px;
+                height: 60px;
+            }
+        }
+
+        /* Safe area for devices with notch */
+        @supports (padding: max(0px)) {
+            .controls {
+                padding-bottom: max(30px, env(safe-area-inset-bottom));
+            }
+        }
+
+        /* Drag hint */
+        .drag-hint {
+            position: absolute;
+            bottom: 150px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            z-index: 25;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+        .drag-hint.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Camera Screen -->
+        <div id="cameraScreen" class="screen active">
+            <div class="camera-wrapper">
+                <div class="camera-container">
+                    <div class="loading" id="loadingIndicator">
+                        <div class="spinner"></div>
+                        <p>Memuat kamera...</p>
+                    </div>
+                    <video id="video" autoplay playsinline muted></video>
+                    <img id="frameOverlay" src="frame_veteran.png" alt="Frame" class="frame-overlay" onerror="console.error('Frame not found')">
+                </div>
+                <div class="orientation-badge" id="orientationBadge">📱 Portrait</div>
+                <div class="controls">
+                    <div class="btn-group">
+                        <button class="btn-switch" onclick="switchCamera()" title="Ganti Kamera">
+                            🔄
+                        </button>
+                        <button class="btn-capture" onclick="takePhoto()">
+                            📸
+                        </button>
+                        <button class="btn-switch" onclick="openGallery()" title="Upload dari Galeri">
+                            🖼️
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview Screen -->
+        <div id="previewScreen" class="screen">
+            <div class="camera-wrapper">
+                <div class="preview-container" id="previewContainer">
+                    <img id="preview" alt="Preview">
+                    <!-- Sticker will be added here dynamically -->
+                </div>
+                <div class="drag-hint" id="dragHint">👆 Geser sticker ke posisi yang diinginkan</div>
+                <div class="controls">
+                    <div class="btn-group">
+                        <button class="btn btn-secondary" onclick="retakePhoto()">
+                            🔄 Ulang
+                        </button>
+                        <button class="btn btn-badge" onclick="openBadgeModal()">
+                            🏷️ Badge
+                        </button>
+                        <button class="btn btn-success" onclick="savePhoto()">
+                            💾 Simpan
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Badge Selection Modal -->
+    <div class="modal-overlay" id="badgeModal">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title">🏷️ Pilih Badge Basis</span>
+                <button class="modal-close" onclick="closeBadgeModal()">✕</button>
+            </div>
+            <div class="badge-grid" id="badgeGrid">
+                <!-- Badges will be populated by JavaScript -->
+            </div>
+            <button class="skip-badge" onclick="removeBadgeAndClose()">
+                ❌ Tanpa Badge
+            </button>
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+    
+    <!-- Hidden file input for gallery -->
+    <input type="file" id="fileInput" accept="image/*" style="display: none;">
+
+    <script>
+        // GANTI INI DENGAN URL GOOGLE APPS SCRIPT ANDA
+        const API_URL = 'https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLgJo8boHOVhyk-Z2Pq19JidLCvUKCVZvS4BXfjpkWvXr-alycaEkDBJEwG5bmiv7AA6b-BwFplDxF9ciUlrBgeOl1-CsKYM27zgDe0YQBc-PUhhizvjQFFuUJ53BpLQhkukkBnbC-U21x351ziNoFSf5AoB3P0Y-DdLKxUyv34NpYJMFNOBH6EsGG3t5JT-tl9Eo3chCsH6JPBD6mlHdGSY1pAj99mwpPhkLP__5D8lZnnaht8gfmDR9KXIc6DyoeXmuJ-lT8T6v_4Pom33FXglgtkFTg&lib=MWHjdJ_V6OUz-Txpvu-zqZvQJNMt8nwjv';
+        
+        let stream = null;
+        let currentFacingMode = 'user';
+        let currentOrientation = 'portrait';
+        let selectedBadge = null;
+        let stickerElement = null;
+        
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const preview = document.getElementById('preview');
+        const previewContainer = document.getElementById('previewContainer');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const frameOverlay = document.getElementById('frameOverlay');
+        const orientationBadge = document.getElementById('orientationBadge');
+        const badgeModal = document.getElementById('badgeModal');
+        const badgeGrid = document.getElementById('badgeGrid');
+        const dragHint = document.getElementById('dragHint');
+        const fileInput = document.getElementById('fileInput');
+        const ctx = canvas.getContext('2d');
+
+        // Badge list
+        const badges = [
+            { id: 'kalideres', name: 'Kalideres', file: 'kalideres.png' },
+            { id: 'ancild', name: 'Ancild', file: 'ancild.png' },
+            { id: 'laser', name: 'Laser', file: 'laser.png' },
+            { id: 'djati', name: 'Djati', file: 'djati.png' },
+            { id: 'boemi', name: 'Boemi', file: 'boemi.png' },
+            { id: 'kamlay', name: 'Kamlay', file: 'kamlay.png' },
+            { id: 'liobaroe', name: 'Liobaroe', file: 'liobaroe.png' },
+            { id: 'cimone', name: 'Cimone', file: 'cimone.png' },
+            { id: 'veroem', name: 'Veroem', file: 'veroem.png' }
+        ];
+
+        // Preload frame images
+        const framePortrait = new Image();
+        framePortrait.src = 'frame_veteran.png';
+        
+        const frameLandscape = new Image();
+        frameLandscape.src = 'frame_veteran2.png';
+
+        // Preload badge images
+        const badgeImages = {};
+        badges.forEach(badge => {
+            badgeImages[badge.id] = new Image();
+            badgeImages[badge.id].src = badge.file;
+        });
+
+        // Populate badge grid
+        function populateBadgeGrid() {
+            badgeGrid.innerHTML = '';
+            badges.forEach(badge => {
+                const item = document.createElement('div');
+                item.className = 'badge-item';
+                item.onclick = () => selectBadge(badge);
+                item.innerHTML = `
+                    <img src="${badge.file}" alt="${badge.name}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2280%22>🏷️</text></svg>'">
+                    <span>${badge.name}</span>
+                `;
+                badgeGrid.appendChild(item);
+            });
+        }
+
+        // Get current frame based on orientation
+        function getCurrentFrame() {
+            return currentOrientation === 'portrait' ? framePortrait : frameLandscape;
+        }
+
+        // Update orientation and frame
+        function updateOrientation() {
+            const isPortrait = window.innerHeight > window.innerWidth;
+            const newOrientation = isPortrait ? 'portrait' : 'landscape';
+            
+            if (newOrientation !== currentOrientation) {
+                currentOrientation = newOrientation;
+                
+                if (currentOrientation === 'portrait') {
+                    frameOverlay.src = 'frame_veteran.png';
+                    orientationBadge.innerHTML = '📱 Portrait';
+                } else {
+                    frameOverlay.src = 'frame_veteran2.png';
+                    orientationBadge.innerHTML = '📱 Landscape';
+                }
+                
+                console.log('Orientation changed to:', currentOrientation);
+            }
+        }
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        async function startCamera(facingMode = 'user') {
+            try {
+                loadingIndicator.style.display = 'block';
+                stopCamera();
+
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: facingMode,
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    }
+                });
+                
+                video.srcObject = stream;
+                currentFacingMode = facingMode;
+                
+                if (facingMode === 'user') {
+                    video.classList.add('mirror');
+                } else {
+                    video.classList.remove('mirror');
+                }
+                
+                video.onloadedmetadata = () => {
+                    loadingIndicator.style.display = 'none';
+                    console.log('Camera resolution:', video.videoWidth, 'x', video.videoHeight);
+                };
+                
+            } catch (err) {
+                loadingIndicator.style.display = 'none';
+                alert('Tidak dapat mengakses kamera: ' + err.message);
+            }
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+        }
+
+        function switchCamera() {
+            const newFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+            startCamera(newFacingMode);
+        }
+
+        // Open gallery to select image
+        function openGallery() {
+            fileInput.click();
+        }
+
+        // Handle file selection from gallery
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            if (!file.type.startsWith('image/')) {
+                alert('Pilih file gambar yang valid!');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    // Determine canvas size based on image orientation
+                    const isImagePortrait = img.height > img.width;
+                    
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    
+                    // Draw uploaded image
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    
+                    // Select appropriate frame based on image orientation
+                    const frameToUse = isImagePortrait ? framePortrait : frameLandscape;
+                    
+                    if (frameToUse.complete && frameToUse.naturalHeight !== 0) {
+                        ctx.drawImage(frameToUse, 0, 0, canvas.width, canvas.height);
+                        showPreview();
+                    } else {
+                        frameToUse.onload = function() {
+                            ctx.drawImage(frameToUse, 0, 0, canvas.width, canvas.height);
+                            showPreview();
+                        };
+                        frameToUse.onerror = function() {
+                            alert('Frame tidak ditemukan!');
+                            showPreview();
+                        };
+                    }
+                };
+                img.onerror = function() {
+                    alert('Gagal memuat gambar!');
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+            
+            // Reset file input
+            fileInput.value = '';
+        });
+
+        function takePhoto() {
+            const videoWidth = video.videoWidth;
+            const videoHeight = video.videoHeight;
+            
+            console.log('Capturing photo at:', videoWidth, 'x', videoHeight);
+            console.log('Current orientation:', currentOrientation);
+            
+            canvas.width = videoWidth;
+            canvas.height = videoHeight;
+
+            ctx.save();
+
+            if (currentFacingMode === 'user') {
+                ctx.translate(canvas.width, 0);
+                ctx.scale(-1, 1);
+            }
+
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            ctx.restore();
+
+            const currentFrame = getCurrentFrame();
+            
+            if (currentFrame.complete && currentFrame.naturalHeight !== 0) {
+                ctx.drawImage(currentFrame, 0, 0, canvas.width, canvas.height);
+                showPreview();
+            } else {
+                currentFrame.onload = function() {
+                    ctx.drawImage(currentFrame, 0, 0, canvas.width, canvas.height);
+                    showPreview();
+                };
+            }
+        }
+
+        function showPreview() {
+            const imageData = canvas.toDataURL('image/jpeg', 0.95);
+            preview.src = imageData;
+            
+            // Reset sticker
+            selectedBadge = null;
+            removeSticker();
+            
+            stopCamera();
+            showScreen('previewScreen');
+        }
+
+        // Badge Modal Functions
+        function openBadgeModal() {
+            badgeModal.classList.add('active');
+        }
+
+        function closeBadgeModal() {
+            badgeModal.classList.remove('active');
+        }
+
+        function selectBadge(badge) {
+            selectedBadge = badge;
+            closeBadgeModal();
+            addStickerToPreview(badge);
+        }
+
+        function removeBadgeAndClose() {
+            selectedBadge = null;
+            removeSticker();
+            closeBadgeModal();
+        }
+
+        function removeSticker() {
+            if (stickerElement) {
+                stickerElement.remove();
+                stickerElement = null;
+            }
+            dragHint.classList.remove('show');
+        }
+
+        function addStickerToPreview(badge) {
+            removeSticker();
+            
+            stickerElement = document.createElement('div');
+            stickerElement.className = 'sticker-overlay';
+            stickerElement.innerHTML = `
+                <img src="${badge.file}" alt="${badge.name}">
+                <button class="remove-sticker" onclick="removeCurrentSticker()">✕</button>
+            `;
+            
+            // Position at center initially
+            const containerRect = previewContainer.getBoundingClientRect();
+            stickerElement.style.left = (containerRect.width / 2 - 40) + 'px';
+            stickerElement.style.top = (containerRect.height / 2 - 40) + 'px';
+            
+            previewContainer.appendChild(stickerElement);
+            
+            // Enable dragging
+            enableDrag(stickerElement);
+            
+            // Show drag hint
+            dragHint.classList.add('show');
+            setTimeout(() => {
+                dragHint.classList.remove('show');
+            }, 3000);
+        }
+
+        function removeCurrentSticker() {
+            selectedBadge = null;
+            removeSticker();
+        }
+
+        // Drag functionality
+        function enableDrag(element) {
+            let isDragging = false;
+            let startX, startY, initialLeft, initialTop;
+
+            element.addEventListener('mousedown', startDrag);
+            element.addEventListener('touchstart', startDrag, { passive: false });
+
+            function startDrag(e) {
+                if (e.target.classList.contains('remove-sticker')) return;
+                
+                isDragging = true;
+                
+                const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+                const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+                
+                startX = clientX;
+                startY = clientY;
+                initialLeft = element.offsetLeft;
+                initialTop = element.offsetTop;
+                
+                if (e.type === 'touchstart') {
+                    e.preventDefault();
+                }
+
+                document.addEventListener('mousemove', drag);
+                document.addEventListener('touchmove', drag, { passive: false });
+                document.addEventListener('mouseup', stopDrag);
+                document.addEventListener('touchend', stopDrag);
+            }
+
+            function drag(e) {
+                if (!isDragging) return;
+                
+                const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+                const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+                
+                const deltaX = clientX - startX;
+                const deltaY = clientY - startY;
+                
+                let newLeft = initialLeft + deltaX;
+                let newTop = initialTop + deltaY;
+                
+                // Boundary check
+                const containerRect = previewContainer.getBoundingClientRect();
+                const elementWidth = element.offsetWidth;
+                const elementHeight = element.offsetHeight;
+                
+                newLeft = Math.max(0, Math.min(newLeft, containerRect.width - elementWidth));
+                newTop = Math.max(0, Math.min(newTop, containerRect.height - elementHeight));
+                
+                element.style.left = newLeft + 'px';
+                element.style.top = newTop + 'px';
+                
+                if (e.type === 'touchmove') {
+                    e.preventDefault();
+                }
+            }
+
+            function stopDrag() {
+                isDragging = false;
+                document.removeEventListener('mousemove', drag);
+                document.removeEventListener('touchmove', drag);
+                document.removeEventListener('mouseup', stopDrag);
+                document.removeEventListener('touchend', stopDrag);
+            }
+        }
+
+        function savePhoto() {
+            // Create final canvas with sticker
+            const finalCanvas = document.createElement('canvas');
+            const finalCtx = finalCanvas.getContext('2d');
+            
+            finalCanvas.width = canvas.width;
+            finalCanvas.height = canvas.height;
+            
+            // Draw the photo with frame
+            finalCtx.drawImage(canvas, 0, 0);
+            
+            // Draw sticker if exists
+            if (selectedBadge && stickerElement) {
+                const badgeImg = badgeImages[selectedBadge.id];
+                
+                if (badgeImg.complete) {
+                    // Get preview image actual rendered size and position
+                    const previewRect = preview.getBoundingClientRect();
+                    const stickerRect = stickerElement.getBoundingClientRect();
+                    
+                    // Calculate scale factor between preview display and actual canvas
+                    const scaleX = canvas.width / previewRect.width;
+                    const scaleY = canvas.height / previewRect.height;
+                    
+                    // Calculate sticker position on canvas (relative to preview image)
+                    const stickerLeft = (stickerRect.left - previewRect.left) * scaleX;
+                    const stickerTop = (stickerRect.top - previewRect.top) * scaleY;
+                    
+                    // Sticker size - use the ACTUAL displayed sticker size scaled to canvas
+                    const stickerDisplayWidth = stickerElement.offsetWidth;
+                    const stickerDisplayHeight = stickerElement.offsetHeight;
+                    
+                    const stickerCanvasWidth = stickerDisplayWidth * scaleX;
+                    const stickerCanvasHeight = stickerDisplayHeight * scaleY;
+                    
+                    finalCtx.drawImage(badgeImg, stickerLeft, stickerTop, stickerCanvasWidth, stickerCanvasHeight);
+                }
+            }
+            
+            const imageData = finalCanvas.toDataURL('image/jpeg', 0.95);
+            
+            // Download to device
+            const link = document.createElement('a');
+            link.download = `veteran7680-${Date.now()}.jpg`;
+            link.href = imageData;
+            link.click();
+            
+            // Upload to Google Drive if API is configured
+            if (API_URL && API_URL !== 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+                uploadToServer(imageData);
+            }
+            
+            setTimeout(() => {
+                selectedBadge = null;
+                removeSticker();
+                showScreen('cameraScreen');
+                startCamera(currentFacingMode);
+            }, 500);
+        }
+
+        // Upload to Google Drive via Apps Script
+        async function uploadToServer(imageData) {
+            try {
+                const payload = {
+                    action: 'upload',
+                    image: imageData,
+                    badge: selectedBadge ? selectedBadge.name : 'None',
+                    orientation: currentOrientation
+                };
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    console.log('Photo uploaded successfully:', result.photoId);
+                } else {
+                    console.error('Upload failed:', result.error);
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+            }
+        }
+
+        function retakePhoto() {
+            selectedBadge = null;
+            removeSticker();
+            showScreen('cameraScreen');
+            startCamera(currentFacingMode);
+        }
+
+        // Listen for orientation changes
+        window.addEventListener('resize', updateOrientation);
+        window.addEventListener('orientationchange', () => {
+            setTimeout(updateOrientation, 100);
+        });
+
+        window.addEventListener('load', () => {
+            updateOrientation();
+            populateBadgeGrid();
+            startCamera('user');
+        });
+
+        window.addEventListener('beforeunload', stopCamera);
+    </script>
+</body>
+</html>
