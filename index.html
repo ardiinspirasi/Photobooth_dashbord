@@ -1,25 +1,147 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>Photobooth Reuni</title>
-  <link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
+  <title>Photobooth Veteran 7680</title>
+
+  <!-- STYLE -->
+  <link rel="stylesheet" href="css/style.css" />
+
+  <!-- CSP SAFE META (OPTIONAL, CLOUDFLARE JUGA BISA SET DI HEADER) -->
+  <meta http-equiv="Content-Security-Policy"
+    content="
+      default-src 'self';
+      img-src 'self' data: blob:;
+      media-src 'self' blob:;
+      script-src 'self';
+      style-src 'self';
+      connect-src 'self' https://script.googleusercontent.com;
+    ">
 </head>
+
 <body>
 
-<div class="app">
-  <video id="video" autoplay playsinline muted></video>
-  <img id="frame" src="frame_potrait.png" class="frame">
+<div class="container">
 
-  <div class="controls">
-    <button id="btnSwitch" class="icon">🔄</button>
-    <button id="btnCapture" class="icon big">📸</button>
+  <!-- ========== CAMERA SCREEN ========== -->
+  <section id="cameraScreen" class="screen active">
+
+    <div class="camera-wrapper">
+
+      <div class="camera-container">
+        <div id="loadingIndicator" class="loading">
+          <div class="spinner"></div>
+          <p>Memuat kamera...</p>
+        </div>
+
+        <video id="video" autoplay playsinline muted></video>
+
+        <!-- FRAME (AUTO ORIENTATION) -->
+        <img
+          id="frameOverlay"
+          class="frame-overlay"
+          src="assets/frame_veteran.png"
+          alt="Frame"
+        />
+      </div>
+
+      <div id="orientationBadge" class="orientation-badge">
+        📱 Portrait
+      </div>
+
+      <!-- CONTROLS -->
+      <div class="controls">
+        <div class="btn-group">
+          <button id="btnSwitchCamera" class="btn-switch" title="Ganti Kamera">
+            🔄
+          </button>
+
+          <button id="btnCapture" class="btn-capture">
+            📸
+          </button>
+
+          <button id="btnGallery" class="btn-switch" title="Ambil dari Galeri">
+            🖼️
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========== PREVIEW SCREEN ========== -->
+  <section id="previewScreen" class="screen">
+
+    <div class="camera-wrapper">
+
+      <div id="previewContainer" class="preview-container">
+        <img id="previewImage" alt="Preview Foto" />
+        <!-- STICKER injected by JS -->
+      </div>
+
+      <div id="dragHint" class="drag-hint">
+        👆 Geser badge ke posisi yang diinginkan
+      </div>
+
+      <div class="controls">
+        <div class="btn-group">
+          <button id="btnRetake" class="btn btn-secondary">
+            🔄 Ulang
+          </button>
+
+          <button id="btnOpenBadge" class="btn btn-badge">
+            🏷️ Badge
+          </button>
+
+          <button id="btnSave" class="btn btn-success">
+            💾 Simpan
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</div>
+
+<!-- ========== BADGE MODAL ========== -->
+<div id="badgeModal" class="modal-overlay">
+
+  <div class="modal">
+
+    <div class="modal-header">
+      <span class="modal-title">🏷️ Pilih Badge Basis</span>
+      <button id="btnCloseBadge" class="modal-close">✕</button>
+    </div>
+
+    <div id="badgeGrid" class="badge-grid">
+      <!-- badge items injected by JS -->
+    </div>
+
+    <button id="btnSkipBadge" class="skip-badge">
+      ❌ Tanpa Badge
+    </button>
+
   </div>
 </div>
 
+<!-- ========== CANVAS ========== -->
 <canvas id="canvas"></canvas>
 
+<!-- ========== HIDDEN FILE INPUT ========== -->
+<input
+  type="file"
+  id="fileInput"
+  accept="image/*"
+  hidden
+/>
+
+<!-- ========== JS (CSP CLEAN) ========== -->
 <script src="js/camera.js" defer></script>
+<script src="js/frame.js" defer></script>
+<script src="js/badge.js" defer></script>
+<script src="js/upload.js" defer></script>
+
 </body>
 </html>
