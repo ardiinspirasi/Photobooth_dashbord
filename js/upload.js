@@ -87,7 +87,7 @@ async function uploadImage() {
   formData.append('file', blob, 'reuni-frame.png');
 
   /* GANTI URL INI */
-  const UPLOAD_ENDPOINT = 'https://example.com/upload';
+  const UPLOAD_ENDPOINT = 'https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLgfOMyZ9_am8jUH7XM3o13nbDqUcwRiQMXOtJwBZqdTF5OMM2N4AfbWK6Wc3VkFpfYaJ8hY6uRhpC5VGrORrMYZAvG37wqFeaZFBYd8qEoKWRE6rSxay6hyFLM_nULyzkcEC2K6w-XJDend_FSMzxRs9KDPmsQFjyOmbUAa9p9OaOTVPPcjxRD06bk10M4xNIa3G3bmSa4BR9HywQIkhaBdnTFeGVnzEJW3Hr91CEcD7OxmsMWkHPiEn4aaog&lib=MWHjdJ_V6OUz-Txpvu-zqZvQJNMt8nwjv';
 
   try {
     btnUpload.disabled = true;
